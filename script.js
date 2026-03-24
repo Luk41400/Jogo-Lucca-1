@@ -22,6 +22,18 @@ let safetyRating = 100;
 let distanceCounter = 0; // para triggar trivia
 const triviaDistance = 1500; // a cada 1500 pontos de viagem, pit stop!
 
+// Sistema de Garagem e Moedas
+let coins = parseInt(localStorage.getItem('f1_coins')) || 0;
+let currentCarIndex = parseInt(localStorage.getItem('f1_current_car')) || 0;
+let ownedCars = JSON.parse(localStorage.getItem('f1_owned_cars')) || [0]; // Index dos carros já comprados
+
+const carModels = [
+    { name: "Scuderia Basic", color: "#e10600", price: 0, speedMult: 1.0 },
+    { name: "Silver Arrow", color: "#c0c0c0", price: 1000, speedMult: 1.1 },
+    { name: "Blue Bull", color: "#00008b", price: 2500, speedMult: 1.2 },
+    { name: "Papaya Orange", color: "#ff8700", price: 5000, speedMult: 1.3 }
+];
+
 let reqAnimFrame;
 let lastFrameTime = performance.now();
 const lanes = [50, 150, 250, 350]; // Centros aproximados das 4 pistas virtuais
@@ -55,6 +67,11 @@ const player = {
     speedX: 0,
     maxSpeedX: 300,
     friction: 0.9,
+    updateStyle: function() {
+        const model = carModels[currentCarIndex];
+        this.color = model.color;
+        this.maxSpeedX = 300 * model.speedMult;
+    },
     draw: function() {
         ctx.save();
         ctx.translate(this.x, this.y);
@@ -285,6 +302,7 @@ function startGame() {
     startScreen.classList.add('hidden');
     gameOverScreen.classList.add('hidden');
     triviaModal.classList.add('hidden');
+    document.getElementById('garage-screen').classList.add('hidden');
     hud.classList.remove('hidden');
     
     gameState = 'playing';
@@ -296,6 +314,7 @@ function startGame() {
     particleSystem = [];
     player.x = canvas.width / 2;
     player.speedX = 0;
+    player.updateStyle();
     
     updateHUD();
     
@@ -382,13 +401,20 @@ function drawGame(dt) {
 function gameOver() {
     gameState = 'gameover';
     hud.classList.add('hidden');
+    const earnedCoins = Math.floor(score / 10);
+    coins += earnedCoins;
+    localStorage.setItem('f1_coins', coins);
+    
     finalScoreSpan.innerText = Math.floor(score);
+    document.getElementById('earned-coins').innerText = earnedCoins;
+    document.getElementById('total-coins-display').innerText = coins;
     gameOverScreen.classList.remove('hidden');
 }
 
 function updateHUD() {
     scoreEl.innerText = Math.floor(score).toLocaleString('pt-BR');
     speedEl.innerText = Math.floor(speed);
+    document.getElementById('hud-coins').innerText = coins;
     
     safetyBar.style.width = Math.max(0, safetyRating) + '%';
     safetyText.innerText = Math.max(0, Math.floor(safetyRating)) + '%';
@@ -449,7 +475,8 @@ const questions = [
     }
 ];
 
-let triviaTimeLeft = 10;
+let usedQuestions = [];
+let triviaTimeLeft = 20; // Aumentado para 20 segundos
 let triviaInterval;
 
 function initTrivia() {
@@ -460,7 +487,18 @@ function initTrivia() {
     rootTimerBar.style.width = '100%';
     rootTimerBar.style.backgroundColor = '#ffd700';
 
-    const qBank = questions[Math.floor(Math.random() * questions.length)];
+    // Evitar repetição
+    let availableQuestions = questions.filter((_, idx) => !usedQuestions.includes(idx));
+    if (availableQuestions.length === 0) {
+        usedQuestions = [];
+        availableQuestions = questions;
+    }
+    
+    const randomIdx = Math.floor(Math.random() * availableQuestions.length);
+    const qBank = availableQuestions[randomIdx];
+    const originalIdx = questions.indexOf(qBank);
+    usedQuestions.push(originalIdx);
+
     document.getElementById('trivia-question').innerText = qBank.q;
     
     const optionsContainer = document.getElementById('trivia-options');
@@ -476,10 +514,10 @@ function initTrivia() {
 
     triviaModal.classList.remove('hidden');
     
-    triviaTimeLeft = 10;
+    triviaTimeLeft = 20; // 20 segundos
     triviaInterval = setInterval(() => {
         triviaTimeLeft -= 0.1;
-        const pct = (triviaTimeLeft / 10) * 100;
+        const pct = (triviaTimeLeft / 20) * 100;
         rootTimerBar.style.width = pct + '%';
         if(pct < 30) rootTimerBar.style.backgroundColor = '#e10600';
         
@@ -506,6 +544,8 @@ function handleTriviaAnswer(selectedIndex, correctIndex, btnElement) {
     if (acertou) {
         healDamage(30);
         score += 300;
+        coins += 50; // Bônus em moedas por acertar
+        localStorage.setItem('f1_coins', coins);
         createExplosion(player.x, player.y - 50, '#00ff41'); 
     } else {
         takeDamage(30);
@@ -522,4 +562,67 @@ function handleTriviaAnswer(selectedIndex, correctIndex, btnElement) {
         }
     }, 2000);
 }
+
+// ======= SISTEMA DE GARAGEM ======= //
+function openGarage() {
+    startScreen.classList.add('hidden');
+    gameOverScreen.classList.add('hidden');
+    const garageScreen = document.getElementById('garage-screen');
+    garageScreen.classList.remove('hidden');
+    renderGarage();
+}
+
+function closeGarage() {
+    document.getElementById('garage-screen').classList.add('hidden');
+    startScreen.classList.remove('hidden');
+}
+
+function renderGarage() {
+    const list = document.getElementById('car-list');
+    list.innerHTML = '';
+    document.getElementById('garage-coins').innerText = coins;
+    
+    carModels.forEach((car, index) => {
+        const card = document.createElement('div');
+        card.className = `car-card ${currentCarIndex === index ? 'active' : ''}`;
+        
+        const isOwned = ownedCars.includes(index);
+        
+        card.innerHTML = `
+            <div class="car-preview" style="background-color: ${car.color}"></div>
+            <h3>${car.name}</h3>
+            <p>Velocidade: x${car.speedMult}</p>
+            ${isOwned ? 
+                `<button class="btn ${currentCarIndex === index ? '' : 'primary-btn'}" onclick="selectCar(${index})">${currentCarIndex === index ? 'SELECIONADO' : 'SELECIONAR'}</button>` :
+                `<button class="btn primary-btn" onclick="buyCar(${index})">COMPRAR ($${car.price})</button>`
+            }
+        `;
+        list.appendChild(card);
+    });
+}
+
+function selectCar(index) {
+    currentCarIndex = index;
+    localStorage.setItem('f1_current_car', index);
+    renderGarage();
+}
+
+function buyCar(index) {
+    const car = carModels[index];
+    if (coins >= car.price) {
+        coins -= car.price;
+        ownedCars.push(index);
+        localStorage.setItem('f1_coins', coins);
+        localStorage.setItem('f1_owned_cars', JSON.stringify(ownedCars));
+        selectCar(index);
+    } else {
+        alert("Moedas insuficientes!");
+    }
+}
+
+// Expo para o HTML
+window.openGarage = openGarage;
+window.closeGarage = closeGarage;
+window.selectCar = selectCar;
+window.buyCar = buyCar;
 

@@ -12,6 +12,7 @@
     <div id="game-container">
         <!-- HUD Principal -->
         <div id="hud" class="hidden">
+            <div class="hud-item coins-display">MOEDAS: $<span id="hud-coins">0</span></div>
             <div class="hud-item score-container">PONTOS <br><span id="score">0</span></div>
             <div class="hud-item safety-container">
                 <div class="safety-label">SEGURO: <span id="safety-text">100%</span></div>
@@ -34,8 +35,21 @@
                 Na pista ou na rua, a habilidade real é a responsabilidade. <br><br>
                 Desvie dos <strong>perigos</strong>, faça as <strong>escolhas certas</strong> no Pit Stop da vida e mostre que você domina a pista!
             </p>
-            <button id="start-btn" class="btn primary-btn">LIGAR MOTORES</button>
+            <div class="menu-buttons">
+                <button id="start-btn" class="btn primary-btn">LIGAR MOTORES</button>
+                <button id="garage-btn" class="btn secondary-btn" onclick="openGarage()">GARAGEM</button>
+            </div>
             <div class="controls-info">← Use as setas ESQUERDA/DIREITA para dirigir →</div>
+        </div>
+
+        <!-- Tela de Garagem -->
+        <div id="garage-screen" class="screen overlay hidden">
+            <h1 class="logo-title">GARAGEM</h1>
+            <div class="coins-badge">SUAS MOEDAS: $<span id="garage-coins">0</span></div>
+            <div id="car-list" class="car-grid">
+                <!-- Carros injetados aqui -->
+            </div>
+            <button class="btn" onclick="closeGarage()">VOLTAR</button>
         </div>
 
         <!-- Tela "Pit Stop" Educacional -->
@@ -54,6 +68,8 @@
         <div id="game-over-screen" class="screen overlay hidden">
             <h1 class="game-over-title">FIM DE CORRIDA</h1>
             <h2 id="final-score-display">Pontuação Final: <span>0</span></h2>
+            <div class="coins-earned">MOEDAS GANHAS: +$<span id="earned-coins">0</span></div>
+            <div class="total-coins">TOTAL: $<span id="total-coins-display">0</span></div>
             <div class="decor-line"></div>
             <div id="game-over-reason" class="reason-box">Você perdeu todo o seu Safety Rating. Bater em obstáculos nas ruas pode custar vidas!</div>
             <button id="restart-btn" class="btn primary-btn">TENTAR NOVAMENTE</button>
