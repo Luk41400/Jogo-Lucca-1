@@ -49,19 +49,18 @@ document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('restart-btn').addEventListener('click', startGame);
 
 // ====== CONTROLES ====== //
-const keys = { ArrowLeft: false, ArrowRight: false, a: false, d: false };
-document.addEventListener('keydown', (e) => {
-    if(keys.hasOwnProperty(e.key) || e.key === 'a' || e.key === 'd') {
-        const key = e.key === 'a' ? 'ArrowLeft' : (e.key === 'd' ? 'ArrowRight' : e.key);
-        keys[key] = true;
-    }
-});
-document.addEventListener('keyup', (e) => {
-    if(keys.hasOwnProperty(e.key) || e.key === 'a' || e.key === 'd') {
-        const key = e.key === 'a' ? 'ArrowLeft' : (e.key === 'd' ? 'ArrowRight' : e.key);
-        keys[key] = false;
-    }
-});
+const keys = { ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false, a: false, d: false, w: false, s: false };
+
+function handleKey(e, isDown) {
+    let k = e.key;
+    if (k === 'a' || k === 'ArrowLeft') keys.ArrowLeft = isDown;
+    if (k === 'd' || k === 'ArrowRight') keys.ArrowRight = isDown;
+    if (k === 'w' || k === 'ArrowUp') keys.ArrowUp = isDown;
+    if (k === 's' || k === 'ArrowDown') keys.ArrowDown = isDown;
+}
+
+document.addEventListener('keydown', (e) => handleKey(e, true));
+document.addEventListener('keyup', (e) => handleKey(e, false));
 
 // ====== OBJETOS DO JOGO ====== //
 const player = {
@@ -113,28 +112,39 @@ const player = {
         ctx.restore();
     },
     update: function(dt) {
-        // Movimento
+        const model = carModels[currentCarIndex];
+        
+        // Movimento Lateral
         if (keys.ArrowLeft) this.speedX -= 1500 * dt;
         if (keys.ArrowRight) this.speedX += 1500 * dt;
-        
-        // Atrito / Inércia
         this.speedX *= this.friction;
         
+        // Movimento Vertical (Acelerar e Ré)
+        if (gameState === 'playing' && trafficLightState === 'none') {
+            if (keys.ArrowUp) {
+                speed += 200 * dt; // Aceleração manual
+            } else if (keys.ArrowDown) {
+                speed -= 400 * dt; // Ré / Freio
+            } else {
+                speed -= 50 * dt; // Desaceleração natural
+            }
+            
+            // Limites de velocidade
+            if (speed > maxSpeed * model.speedMult) speed = maxSpeed * model.speedMult;
+            if (speed < -50) speed = -50; // Velocidade de ré limitada
+        } else if (trafficLightState !== 'none') {
+            speed *= 0.9; // Para suavemente no semáforo
+        }
+
+        this.x += this.speedX * dt;
+
         // Limite Velocidade Lateral
         if(this.speedX > this.maxSpeedX) this.speedX = this.maxSpeedX;
         if(this.speedX < -this.maxSpeedX) this.speedX = -this.maxSpeedX;
 
-        this.x += this.speedX * dt;
-
         // Borda da tela
-        if (this.x < 25) {
-            this.x = 25;
-            this.speedX = 0;
-        }
-        if (this.x > canvas.width - 25) {
-            this.x = canvas.width - 25;
-            this.speedX = 0;
-        }
+        if (this.x < 35) { this.x = 35; this.speedX = 0; }
+        if (this.x > canvas.width - 35) { this.x = canvas.width - 35; this.speedX = 0; }
     }
 };
 
@@ -347,17 +357,14 @@ function gameLoop(timestamp) {
 }
 
 function updateGame(dt) {
-    // Ganho de moedas MUITO MAIOR por segundo
-    score += (speed * dt) / 5;
-    distanceCounter += speed * dt;
-    
-    // Ganha 5 moedas a cada 100 pixels (era 1)
-    if (Math.floor(distanceCounter / 100) > Math.floor((distanceCounter - speed * dt) / 100)) {
-        coins += 5;
+    if (speed > 0) {
+        score += (speed * dt) / 5;
+        distanceCounter += speed * dt;
+        
+        if (Math.floor(distanceCounter / 100) > Math.floor((distanceCounter - speed * dt) / 100)) {
+            coins += 5;
+        }
     }
-    
-    speed += 12 * dt; // Aceleração ainda mais rápida
-    if (speed > 600) speed = 600; 
     
     player.update(dt);
     
@@ -365,6 +372,8 @@ function updateGame(dt) {
     if (distanceCounter >= nextLightThreshold && trafficLightState === 'none') {
         startTrafficLightSequence();
     }
+    
+    handleSpawners(dt);
     
     if (trafficLightState !== 'none') {
         speed = 0; // Para o carro no semáforo
