@@ -30,14 +30,17 @@ let ownedCars = JSON.parse(localStorage.getItem('f1_owned_cars')) || [0]; // Ind
 const carModels = [
     { name: "Eco Sedan", color: "#4caf50", price: 0, speedMult: 1.0 },
     { name: "Urban Hatch", color: "#2196f3", price: 500, speedMult: 1.2 },
-    { name: "Sport Coupé", color: "#9c27b0", price: 1500, speedMult: 1.5 },
-    { name: "Classic GT", color: "#795548", price: 3000, speedMult: 1.8 },
-    { name: "Ultimate F1", color: "#e10600", price: 10000, speedMult: 2.5 }
+    { name: "Family SUV", color: "#ffeb3b", price: 1200, speedMult: 1.3 },
+    { name: "Sport Coupé", color: "#9c27b0", price: 2500, speedMult: 1.6 },
+    { name: "Classic GT", color: "#795548", price: 5000, speedMult: 1.9 },
+    { name: "Hyper Car", color: "#607d8b", price: 8000, speedMult: 2.2 },
+    { name: "Ultimate F1", color: "#e10600", price: 15000, speedMult: 2.8 }
 ];
 
 let trafficLightState = 'none'; // 'none', 'green', 'yellow', 'red'
-let trafficLightTimer = 0;
-let nextLightThreshold = 2000; // Distância para o próximo semáforo
+let trafficMsg = "";
+let trafficMsgColor = "#fff";
+let nextLightThreshold = 2000; 
 let lastFrameTime = performance.now();
 const lanes = [50, 150, 250, 350]; // Centros aproximados das 4 pistas virtuais
 
@@ -344,17 +347,17 @@ function gameLoop(timestamp) {
 }
 
 function updateGame(dt) {
-    // Ganho de moedas por tempo/distância
+    // Ganho de moedas MUITO MAIOR por segundo
     score += (speed * dt) / 5;
     distanceCounter += speed * dt;
     
-    // Ganha 1 moeda a cada 100 pixels percorridos
+    // Ganha 5 moedas a cada 100 pixels (era 1)
     if (Math.floor(distanceCounter / 100) > Math.floor((distanceCounter - speed * dt) / 100)) {
-        coins += 1;
+        coins += 5;
     }
     
-    speed += 8 * dt; // Velocidade aumenta mais rápido agora
-    if (speed > 500) speed = 500; // Limite maior
+    speed += 12 * dt; // Aceleração ainda mais rápida
+    if (speed > 600) speed = 600; 
     
     player.update(dt);
     
@@ -411,6 +414,17 @@ function drawGame(dt) {
     // Semáforo Visual
     if (trafficLightState !== 'none') {
         drawTrafficLight();
+        
+        // Mensagem de Instrução Centralizada
+        if (trafficMsg !== "") {
+            ctx.font = "bold 40px Oswald";
+            ctx.textAlign = "center";
+            ctx.fillStyle = trafficMsgColor;
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 4;
+            ctx.strokeText(trafficMsg, canvas.width / 2, canvas.height / 2 - 150);
+            ctx.fillText(trafficMsg, canvas.width / 2, canvas.height / 2 - 150);
+        }
     }
     
     entities.forEach(e => e.draw());
@@ -574,11 +588,19 @@ function handleTriviaAnswer(selectedIndex, correctIndex, btnElement, isLightEven
     if (acertou) {
         healDamage(30);
         score += 300;
-        coins += 100; 
-        if(isLightEvent) trafficLightState = 'green';
+        coins += 250; // Bônus de acerto maior
+        if(isLightEvent) {
+            trafficLightState = 'green';
+            trafficMsg = "PODE PASSAR";
+            trafficMsgColor = "#00ff00";
+        }
     } else {
         takeDamage(30);
-        if(isLightEvent) trafficLightState = 'red';
+        if(isLightEvent) {
+            trafficLightState = 'red';
+            trafficMsg = "PARE";
+            trafficMsgColor = "#ff0000";
+        }
     }
     
     updateHUD();
@@ -590,14 +612,24 @@ function handleTriviaAnswer(selectedIndex, correctIndex, btnElement, isLightEven
             gameState = 'playing';
             entities = [];
             if(isLightEvent) {
-                // Se errou o semáforo, espera um pouco mais no vermelho
                 setTimeout(() => {
                     trafficLightState = 'none';
+                    trafficMsg = "";
                     speed = baseSpeed;
-                }, acertou ? 500 : 3000);
+                }, acertou ? 1000 : 4000);
             }
         }
     }, 2000);
+}
+
+function startTrafficLightSequence() {
+    trafficLightState = 'yellow';
+    trafficMsg = "POR FAVOR PARAR";
+    trafficMsgColor = "#ffff00";
+    distanceCounter = 0;
+    nextLightThreshold = 3000 + Math.random() * 2000;
+    
+    initTrivia(true); 
 }
 
 // ======= SISTEMA DE GARAGEM ======= //
