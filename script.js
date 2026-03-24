@@ -27,17 +27,14 @@ let coins = parseInt(localStorage.getItem('f1_coins')) || 0;
 let currentCarIndex = parseInt(localStorage.getItem('f1_current_car')) || 0;
 let ownedCars = JSON.parse(localStorage.getItem('f1_owned_cars')) || [0]; // Index dos carros já comprados
 
-const carModels = [
-    { name: "Eco Sedan", color: "#4caf50", price: 0, speedMult: 1.0 },
-    { name: "Urban Hatch", color: "#2196f3", price: 500, speedMult: 1.2 },
-    { name: "Family SUV", color: "#ffeb3b", price: 1200, speedMult: 1.3 },
-    { name: "Sport Coupé", color: "#9c27b0", price: 2500, speedMult: 1.6 },
-    { name: "Classic GT", color: "#795548", price: 5000, speedMult: 1.9 },
-    { name: "Hyper Car", color: "#607d8b", price: 8000, speedMult: 2.2 },
-    { name: "Ultimate F1", color: "#e10600", price: 15000, speedMult: 2.8 }
+const tracks = [
+    { name: "Circuito Urbano", distance: 10000, bgColor: "#1e1e24", roadColor: "#333", reward: 500 },
+    { name: "Deserto Veloz", distance: 15000, bgColor: "#edc9af", roadColor: "#444", reward: 800 }
 ];
 
-let trafficLightState = 'none'; // 'none', 'green', 'yellow', 'red'
+let currentTrackIndex = 0;
+let totalDistanceTraveled = 0; // Distância total na corrida atual
+let trafficLightState = 'none'; 
 let trafficMsg = "";
 let trafficMsgColor = "#fff";
 let nextLightThreshold = 2000; 
@@ -319,13 +316,15 @@ function startGame() {
     gameOverScreen.classList.add('hidden');
     triviaModal.classList.add('hidden');
     document.getElementById('garage-screen').classList.add('hidden');
+    document.getElementById('track-screen')?.classList.add('hidden');
     hud.classList.remove('hidden');
     
     gameState = 'playing';
     score = 0;
-    speed = baseSpeed;
+    speed = 0; // Começa parado agora com controle manual
     safetyRating = 100;
     distanceCounter = 0;
+    totalDistanceTraveled = 0;
     entities = [];
     particleSystem = [];
     player.x = canvas.width / 2;
@@ -360,6 +359,7 @@ function updateGame(dt) {
     if (speed > 0) {
         score += (speed * dt) / 5;
         distanceCounter += speed * dt;
+        totalDistanceTraveled += speed * dt;
         
         if (Math.floor(distanceCounter / 100) > Math.floor((distanceCounter - speed * dt) / 100)) {
             coins += 5;
@@ -367,6 +367,12 @@ function updateGame(dt) {
     }
     
     player.update(dt);
+    
+    // Verificar se chegou no fim da estrada
+    const track = tracks[currentTrackIndex];
+    if (totalDistanceTraveled >= track.distance) {
+        finishTrack();
+    }
     
     // Lógica do Semáforo
     if (distanceCounter >= nextLightThreshold && trafficLightState === 'none') {
@@ -399,14 +405,15 @@ function startTrafficLightSequence() {
 }
 
 function drawGame(dt) {
-    ctx.fillStyle = "#1e1e24";
+    const track = tracks[currentTrackIndex];
+    ctx.fillStyle = track.bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Desenho da Rua com calçadas (visual urbano)
-    ctx.fillStyle = "#333";
+    // Desenho da Rua
+    ctx.fillStyle = track.roadColor;
     ctx.fillRect(20, 0, canvas.width - 40, canvas.height);
     
-    roadOffset += (speed || 100) * dt * 2; // Mantém movimento visual mínimo
+    roadOffset += (speed || 100) * dt * 2;
     if (roadOffset > 100) roadOffset = 0;
     
     ctx.fillStyle = "#fff";
@@ -463,8 +470,24 @@ function gameOver() {
     coins += earnedCoins;
     localStorage.setItem('f1_coins', coins);
     
+    document.getElementById('game-over-title').innerText = "FIM DE CORRIDA";
     finalScoreSpan.innerText = Math.floor(score);
     document.getElementById('earned-coins').innerText = earnedCoins;
+    document.getElementById('total-coins-display').innerText = coins;
+    gameOverScreen.classList.remove('hidden');
+}
+
+function finishTrack() {
+    gameState = 'gameover';
+    hud.classList.add('hidden');
+    const track = tracks[currentTrackIndex];
+    coins += track.reward;
+    localStorage.setItem('f1_coins', coins);
+    
+    document.getElementById('game-over-title').innerText = "VITORIA! CHEGADA!";
+    document.getElementById('game-over-reason').innerText = `Você completou o mapa ${track.name} e ganhou um bônus de $${track.reward}!`;
+    finalScoreSpan.innerText = Math.floor(score);
+    document.getElementById('earned-coins').innerText = track.reward;
     document.getElementById('total-coins-display').innerText = coins;
     gameOverScreen.classList.remove('hidden');
 }

@@ -309,6 +309,37 @@ body {
     margin-bottom: 15px;
 }
 
+.track-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    margin: 20px 0;
+}
+
+.track-btn {
+    background: #444;
+    border: 2px solid transparent;
+    padding: 20px;
+    text-align: center;
+}
+
+.track-btn.desert {
+    background: linear-gradient(rgba(237, 201, 175, 0.2), #222);
+    border-color: #edc9af;
+}
+
+.track-btn:hover {
+    border-color: #ffd700;
+}
+
+.game-over-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 80%;
+}
+
 /* PIT STOP TRIVIA MODAL */
 .pitstop-badge {
     background-color: #ffd700;

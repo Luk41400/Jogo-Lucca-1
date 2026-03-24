@@ -36,10 +36,26 @@
                 Desvie dos <strong>perigos</strong>, faça as <strong>escolhas certas</strong> no Pit Stop da vida e mostre que você domina a pista!
             </p>
             <div class="menu-buttons">
-                <button id="start-btn" class="btn primary-btn">LIGAR MOTORES</button>
+                <button id="start-btn" class="btn primary-btn" onclick="openTrackSelect()">ESCOLHER MAPA</button>
                 <button id="garage-btn" class="btn secondary-btn" onclick="openGarage()">GARAGEM</button>
             </div>
             <div class="controls-info">← Use as setas ESQUERDA/DIREITA para dirigir →</div>
+        </div>
+
+        <!-- Tela de Seleção de Mapa -->
+        <div id="track-screen" class="screen overlay hidden">
+            <h1 class="logo-title">MAPAS</h1>
+            <div class="track-list">
+                <button class="btn track-btn" onclick="selectTrack(0)">
+                    <h3>CIRCUITO URBANO</h3>
+                    <p>Distância: 10km | Bônus: $500</p>
+                </button>
+                <button class="btn track-btn desert" onclick="selectTrack(1)">
+                    <h3>DESERTO VELOZ</h3>
+                    <p>Distância: 15km | Bônus: $800</p>
+                </button>
+            </div>
+            <button class="btn" onclick="closeGarage()">VOLTAR</button>
         </div>
 
         <!-- Tela de Garagem -->
@@ -66,13 +82,16 @@
 
         <!-- Tela Fim de Jogo -->
         <div id="game-over-screen" class="screen overlay hidden">
-            <h1 class="game-over-title">FIM DE CORRIDA</h1>
+            <h1 class="game-over-title" id="game-over-title">FIM DE CORRIDA</h1>
             <h2 id="final-score-display">Pontuação Final: <span>0</span></h2>
-            <div class="coins-earned">MOEDAS GANHAS: +$<span id="earned-coins">0</span></div>
+            <div class="coins-earned">RECOMPENSA: +$<span id="earned-coins">0</span></div>
             <div class="total-coins">TOTAL: $<span id="total-coins-display">0</span></div>
             <div class="decor-line"></div>
             <div id="game-over-reason" class="reason-box">Você perdeu todo o seu Safety Rating. Bater em obstáculos nas ruas pode custar vidas!</div>
-            <button id="restart-btn" class="btn primary-btn">TENTAR NOVAMENTE</button>
+            <div class="game-over-buttons">
+                <button id="restart-btn" class="btn primary-btn">JOGAR DE NOVO</button>
+                <button class="btn secondary-btn" onclick="goToGarageFromOver()">IR PARA GARAGEM</button>
+            </div>
         </div>
     </div>
 
