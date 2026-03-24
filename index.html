@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Safe Racer: Own the Road</title>
+    <!-- Fontes Premium: Montserrat para texto e Oswald para painéis/números -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,800;1,400&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- HUD Principal -->
+        <div id="hud" class="hidden">
+            <div class="hud-item score-container">PONTOS <br><span id="score">0</span></div>
+            <div class="hud-item safety-container">
+                <div class="safety-label">SEGURO: <span id="safety-text">100%</span></div>
+                <div class="progress-bar">
+                    <div id="safety-bar"></div>
+                </div>
+            </div>
+            <div class="hud-item speed-container">VELOCIDADE <br><span id="speed">120</span> <small>km/h</small></div>
+        </div>
+
+        <!-- Canvas do Jogo Principal -->
+        <canvas id="game-canvas" width="400" height="700"></canvas>
+
+        <!-- Menu Principal: Início -->
+        <div id="start-screen" class="screen overlay">
+            <h1 class="logo-title">F1 <span class="highlight">SAFE RACER</span></h1>
+            <h2 class="subtitle">OWN THE ROAD</h2>
+            <div class="decor-line"></div>
+            <p class="intro-text">
+                Na pista ou na rua, a habilidade real é a responsabilidade. <br><br>
+                Desvie dos <strong>perigos</strong>, faça as <strong>escolhas certas</strong> no Pit Stop da vida e mostre que você domina a pista!
+            </p>
+            <button id="start-btn" class="btn primary-btn">LIGAR MOTORES</button>
+            <div class="controls-info">← Use as setas ESQUERDA/DIREITA para dirigir →</div>
+        </div>
+
+        <!-- Tela "Pit Stop" Educacional -->
+        <div id="trivia-modal" class="screen overlay hidden">
+            <div class="pitstop-badge">PIT STOP SAFETY CHECK</div>
+            <h2 id="trivia-question">Por que o uso do cinto de segurança no banco traseiro é essencial?</h2>
+            <div id="trivia-options" class="options-grid">
+                <!-- As opções serão inseridas no JS dinamicamente -->
+            </div>
+            <div class="trivia-timer-box">
+                <div class="timer-bar" id="trivia-timer-bar"></div>
+            </div>
+        </div>
+
+        <!-- Tela Fim de Jogo -->
+        <div id="game-over-screen" class="screen overlay hidden">
+            <h1 class="game-over-title">FIM DE CORRIDA</h1>
+            <h2 id="final-score-display">Pontuação Final: <span>0</span></h2>
+            <div class="decor-line"></div>
+            <div id="game-over-reason" class="reason-box">Você perdeu todo o seu Safety Rating. Bater em obstáculos nas ruas pode custar vidas!</div>
+            <button id="restart-btn" class="btn primary-btn">TENTAR NOVAMENTE</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

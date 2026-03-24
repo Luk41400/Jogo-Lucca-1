@@ -1,0 +1,356 @@
+/* RESET BÁSICO */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body {
+    background-color: #0b0c10;
+    color: #ffffff;
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    background-image: radial-gradient(circle at center, #1b1c22 0%, #0b0c10 100%);
+}
+
+/* CONTAINER DO JOGO */
+#game-container {
+    position: relative;
+    width: 400px;
+    height: 700px;
+    background-color: #222; /* Cor do asfalto base */
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.9), 0 0 15px rgba(225, 6, 0, 0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* CANVAS CONFIGURATION */
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated; /* Deixa bordas mais sharp se necessário */
+    cursor: none;
+}
+
+/* HEADS UP DISPLAY (HUD) */
+#hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 15px 20px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%);
+    z-index: 10;
+    font-family: 'Oswald', sans-serif;
+    text-shadow: 2px 2px 4px #000;
+}
+
+.hud-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.hud-item span {
+    font-size: 26px;
+    font-weight: 700;
+}
+
+.score-container, .speed-container {
+    text-align: center;
+    font-size: 12px;
+    color: #ffd700;
+    letter-spacing: 1px;
+}
+
+.speed-container span { color: #fff; }
+
+.safety-container {
+    align-items: center;
+    width: 140px;
+}
+
+.safety-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+#safety-text {
+    color: #00ff41;
+    font-weight: 700;
+    margin-left: 2px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+}
+
+#safety-bar {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff0000 0%, #ffff00 50%, #00ff41 100%);
+    background-size: 200% 100%;
+    background-position: 100% 0; /* Começa verde na direita */
+    transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* OVERLAYS DAS TELAS (MENUS) */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    text-align: center;
+    z-index: 20;
+    background: rgba(11, 12, 16, 0.92);
+    backdrop-filter: blur(5px);
+    transition: opacity 0.4s ease;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* TYPOGRAPHY DOS MENUS */
+.logo-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 65px;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+    text-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    margin-bottom: 5px;
+}
+
+.highlight {
+    color: #e10600; /* F1 Scuderia Red */
+    display: block;
+    text-shadow: 0 0 20px rgba(225, 6, 0, 0.4);
+}
+
+.subtitle {
+    font-size: 20px;
+    color: #ffd700;
+    letter-spacing: 3px;
+    font-weight: 800;
+    margin-bottom: 25px;
+}
+
+.decor-line {
+    width: 60px;
+    height: 4px;
+    background: #e10600;
+    margin-bottom: 25px;
+    border-radius: 2px;
+}
+
+.intro-text {
+    font-size: 14px;
+    color: #cccccc;
+    line-height: 1.6;
+    margin-bottom: 40px;
+}
+
+.intro-text strong {
+    color: #fff;
+    font-weight: 700;
+}
+
+.controls-info {
+    margin-top: 35px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #999;
+    background: rgba(255,255,255,0.03);
+    padding: 12px 20px;
+    border-radius: 30px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* BOTÕES ESTILIZADOS */
+.btn {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px;
+    padding: 16px 36px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: 700;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    letter-spacing: 1.5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.4s;
+}
+
+.btn:hover::after {
+    left: 100%;
+}
+
+.primary-btn {
+    background: linear-gradient(rebeccapurple, #e10600);
+    background-color: #e10600;
+    color: white;
+    box-shadow: 0 6px 0 #8b0000, 0 15px 25px rgba(225, 6, 0, 0.3);
+}
+
+.primary-btn:hover {
+    transform: translateY(2px);
+    box-shadow: 0 4px 0 #8b0000, 0 10px 15px rgba(225, 6, 0, 0.4);
+    filter: brightness(1.1);
+}
+
+.primary-btn:active {
+    transform: translateY(6px);
+    box-shadow: 0 0px 0 #8b0000, 0 5px 10px rgba(225, 6, 0, 0.4);
+}
+
+/* PIT STOP TRIVIA MODAL */
+.pitstop-badge {
+    background-color: #ffd700;
+    color: #111;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 1px;
+    margin-bottom: 25px;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    animation: flash 1s infinite alternate ease-in-out;
+}
+
+@keyframes flash {
+    0% { transform: scale(1); opacity: 0.9; }
+    100% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 25px rgba(255, 215, 0, 0.7); }
+}
+
+#trivia-question {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 35px;
+    line-height: 1.5;
+    text-shadow: 1px 1px 2px #000;
+}
+
+.options-grid {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+}
+
+.option-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 16px 20px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    display: flex;
+    align-items: center;
+}
+
+.option-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+    transform: translateX(5px);
+}
+
+.option-btn.correct {
+    background: rgba(0, 255, 65, 0.2);
+    border-color: #00ff41;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+}
+
+.option-btn.wrong {
+    background: rgba(225, 6, 0, 0.2);
+    border-color: #e10600;
+    box-shadow: 0 0 20px rgba(225, 6, 0, 0.3);
+}
+
+.trivia-timer-box {
+    margin-top: 30px;
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+#trivia-timer-bar {
+    width: 100%;
+    height: 100%;
+    background: #ffd700;
+    transition: width linear;
+}
+
+/* GAME OVER SCREEN */
+.game-over-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 48px;
+    color: #e10600;
+    text-shadow: 0 0 15px rgba(225, 6, 0, 0.5);
+}
+
+#final-score-display {
+    font-size: 24px;
+    color: #fff;
+    margin: 10px 0 25px;
+}
+
+#final-score-display span {
+    color: #ffd700;
+    font-weight: 800;
+    font-family: 'Oswald', sans-serif;
+    font-size: 32px;
+}
+
+.reason-box {
+    background: linear-gradient(90deg, rgba(225,6,0,0.1), transparent);
+    padding: 20px;
+    border-left: 5px solid #e10600;
+    margin: 10px 0 40px 0;
+    font-size: 15px;
+    font-style: italic;
+    color: #ddd;
+    line-height: 1.5;
+}
