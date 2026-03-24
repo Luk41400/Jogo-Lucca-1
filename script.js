@@ -28,13 +28,16 @@ let currentCarIndex = parseInt(localStorage.getItem('f1_current_car')) || 0;
 let ownedCars = JSON.parse(localStorage.getItem('f1_owned_cars')) || [0]; // Index dos carros já comprados
 
 const carModels = [
-    { name: "Scuderia Basic", color: "#e10600", price: 0, speedMult: 1.0 },
-    { name: "Silver Arrow", color: "#c0c0c0", price: 1000, speedMult: 1.1 },
-    { name: "Blue Bull", color: "#00008b", price: 2500, speedMult: 1.2 },
-    { name: "Papaya Orange", color: "#ff8700", price: 5000, speedMult: 1.3 }
+    { name: "Eco Sedan", color: "#4caf50", price: 0, speedMult: 1.0 },
+    { name: "Urban Hatch", color: "#2196f3", price: 500, speedMult: 1.2 },
+    { name: "Sport Coupé", color: "#9c27b0", price: 1500, speedMult: 1.5 },
+    { name: "Classic GT", color: "#795548", price: 3000, speedMult: 1.8 },
+    { name: "Ultimate F1", color: "#e10600", price: 10000, speedMult: 2.5 }
 ];
 
-let reqAnimFrame;
+let trafficLightState = 'none'; // 'none', 'green', 'yellow', 'red'
+let trafficLightTimer = 0;
+let nextLightThreshold = 2000; // Distância para o próximo semáforo
 let lastFrameTime = performance.now();
 const lanes = [50, 150, 250, 350]; // Centros aproximados das 4 pistas virtuais
 
@@ -341,13 +344,29 @@ function gameLoop(timestamp) {
 }
 
 function updateGame(dt) {
+    // Ganho de moedas por tempo/distância
     score += (speed * dt) / 5;
     distanceCounter += speed * dt;
-    speed += 5 * dt;
-    if (speed > maxSpeed) speed = maxSpeed;
+    
+    // Ganha 1 moeda a cada 100 pixels percorridos
+    if (Math.floor(distanceCounter / 100) > Math.floor((distanceCounter - speed * dt) / 100)) {
+        coins += 1;
+    }
+    
+    speed += 8 * dt; // Velocidade aumenta mais rápido agora
+    if (speed > 500) speed = 500; // Limite maior
     
     player.update(dt);
     
+    // Lógica do Semáforo
+    if (distanceCounter >= nextLightThreshold && trafficLightState === 'none') {
+        startTrafficLightSequence();
+    }
+    
+    if (trafficLightState !== 'none') {
+        speed = 0; // Para o carro no semáforo
+    }
+
     handleSpawners(dt);
     entities.forEach(e => e.update(dt));
     particleSystem.forEach(p => p.update(dt));
@@ -357,45 +376,61 @@ function updateGame(dt) {
     
     checkCollisions();
     updateHUD();
+}
+
+function startTrafficLightSequence() {
+    trafficLightState = 'yellow';
+    distanceCounter = 0;
+    nextLightThreshold = 3000 + Math.random() * 2000;
     
-    if (distanceCounter >= triviaDistance && gameState === 'playing') {
-        distanceCounter = 0;
-        initTrivia();
-    }
+    initTrivia(true); // Trivia especial de semáforo
 }
 
 function drawGame(dt) {
     ctx.fillStyle = "#1e1e24";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    roadOffset += speed * dt * 2;
+    // Desenho da Rua com calçadas (visual urbano)
+    ctx.fillStyle = "#333";
+    ctx.fillRect(20, 0, canvas.width - 40, canvas.height);
+    
+    roadOffset += (speed || 100) * dt * 2; // Mantém movimento visual mínimo
     if (roadOffset > 100) roadOffset = 0;
     
     ctx.fillStyle = "#fff";
     for(let i=-2; i < canvas.height/100 + 2; i++) {
         let y = i * 100 + roadOffset;
-        ctx.fillRect(canvas.width * 0.25 - 2, y, 4, 40);
         ctx.fillRect(canvas.width * 0.5 - 2, y, 4, 40);
-        ctx.fillRect(canvas.width * 0.75 - 2, y, 4, 40);
     }
+    
+    // Calçadas
+    ctx.fillStyle = "#555";
+    ctx.fillRect(0, 0, 20, canvas.height);
+    ctx.fillRect(canvas.width - 20, 0, 20, canvas.height);
 
-    for(let i=-2; i < canvas.height/40 + 2; i++) {
-        let y = i * 40 + (roadOffset % 40) * 1.5;
-        ctx.fillStyle = i % 2 === 0 ? '#e10600' : '#fff'; // Red/White curbs
-        ctx.fillRect(0, y, 15, 40);
-        ctx.fillRect(canvas.width - 15, y, 15, 40);
+    // Semáforo Visual
+    if (trafficLightState !== 'none') {
+        drawTrafficLight();
     }
     
     entities.forEach(e => e.draw());
     player.draw();
     particleSystem.forEach(p => p.draw());
+}
+
+function drawTrafficLight() {
+    ctx.fillStyle = "#111";
+    ctx.fillRect(canvas.width - 60, 100, 40, 100);
     
-    // Dano Visual
-    if(safetyRating < 100 && gameState === 'playing') {
-        let alpha = (100 - safetyRating) / 200; // max 0.5 overlay vermelho suave constante se danificado
-        ctx.fillStyle = `rgba(225, 6, 0, ${alpha})`;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
+    // Luz Red
+    ctx.fillStyle = trafficLightState === 'red' ? '#ff0000' : '#300';
+    ctx.beginPath(); ctx.arc(canvas.width - 40, 115, 12, 0, Math.PI*2); ctx.fill();
+    // Luz Yellow
+    ctx.fillStyle = trafficLightState === 'yellow' ? '#ffff00' : '#330';
+    ctx.beginPath(); ctx.arc(canvas.width - 40, 150, 12, 0, Math.PI*2); ctx.fill();
+    // Luz Green
+    ctx.fillStyle = trafficLightState === 'green' ? '#00ff00' : '#030';
+    ctx.beginPath(); ctx.arc(canvas.width - 40, 185, 12, 0, Math.PI*2); ctx.fill();
 }
 
 function gameOver() {
@@ -434,34 +469,26 @@ function updateHUD() {
 // ======= PIT STOP TRIVIA ======= //
 const questions = [
     {
-        q: "Ao cruzar com um semáforo amarelo piscante contínuo à noite, o que fazer?",
+        q: "O semáforo ficou AMARELO. Qual a atitude correta?",
         options: [
-            "Acelerar, de noite não há perigo.",
-            "Reduzir a velocidade e cruzar com atenção redobrada.",
-            "Parar completamente e esperar ficar verde.",
-            "Avançar buzinando rápido."
+            "Acelerar para passar antes do vermelho.",
+            "Frear bruscamente no meio do cruzamento.",
+            "Diminuir a marcha e parar com segurança, se possível.",
+            "Buzinar para que os outros saiam da frente."
         ],
-        answer: 1
+        answer: 2,
+        type: 'light-yellow'
     },
     {
-        q: "Qual a distância segura para o veículo da frente em dias normais?",
+        q: "O semáforo está VERMELHO. Você pode avançar se não houver carros vindo?",
         options: [
-            "Pelo menos 1 segundo.",
-            "A regra preventiva dos 2 segundos livres.",
-            "Só me preocupo na chuva forte.",
-            "Colar atrás para pegar o vácuo esportivo."
+            "Sim, se for de madrugada.",
+            "Nunca, o sinal vermelho exige parada obrigatória.",
+            "Sim, se estiver com muita pressa.",
+            "Apenas se for virar à direita."
         ],
-        answer: 1
-    },
-    {
-        q: "Usar o celular no trânsito parado no semáforo...",
-        options: [
-            "Pode para checar mapas rapidamente.",
-            "É infração gravíssima, tira seu maior ativo: a atenção.",
-            "Só é infração acima de 40km/h.",
-            "Mantém o condutor acordado portanto é recomendável."
-        ],
-        answer: 1
+        answer: 1,
+        type: 'light-red'
     },
     {
         q: "Qual a filosofia da 'Direção Defensiva'?",
@@ -469,35 +496,38 @@ const questions = [
             "Pilotar um tanque blindado nas ruas.",
             "Dirigir prevendo cenários para evitar acidentes ativamente.",
             "Sempre ultrapassar primeiro evitando ficar para trás.",
-            "Buzinar sempre que se sentir ameaçado por outro motorista."
+            "Buzinar sempre que se sentir ameaçado."
         ],
         answer: 1
     }
 ];
 
 let usedQuestions = [];
-let triviaTimeLeft = 20; // Aumentado para 20 segundos
+let triviaTimeLeft = 20; 
 let triviaInterval;
 
-function initTrivia() {
+function initTrivia(isLightEvent = false) {
     gameState = 'trivia';
-    speed = baseSpeed; 
     
     const rootTimerBar = document.getElementById('trivia-timer-bar');
     rootTimerBar.style.width = '100%';
     rootTimerBar.style.backgroundColor = '#ffd700';
 
-    // Evitar repetição
-    let availableQuestions = questions.filter((_, idx) => !usedQuestions.includes(idx));
-    if (availableQuestions.length === 0) {
-        usedQuestions = [];
-        availableQuestions = questions;
+    let qBank;
+    if (isLightEvent) {
+        // Seleciona pergunta de semáforo
+        const lightQuestions = questions.filter(q => q.type && q.type.startsWith('light'));
+        qBank = lightQuestions[Math.floor(Math.random() * lightQuestions.length)];
+    } else {
+        let availableQuestions = questions.filter((q, idx) => !usedQuestions.includes(idx) && !q.type);
+        if (availableQuestions.length === 0) {
+            usedQuestions = [];
+            availableQuestions = questions.filter(q => !q.type);
+        }
+        const randomIdx = Math.floor(Math.random() * availableQuestions.length);
+        qBank = availableQuestions[randomIdx];
+        usedQuestions.push(questions.indexOf(qBank));
     }
-    
-    const randomIdx = Math.floor(Math.random() * availableQuestions.length);
-    const qBank = availableQuestions[randomIdx];
-    const originalIdx = questions.indexOf(qBank);
-    usedQuestions.push(originalIdx);
 
     document.getElementById('trivia-question').innerText = qBank.q;
     
@@ -508,13 +538,13 @@ function initTrivia() {
         const btn = document.createElement('button');
         btn.className = 'option-btn';
         btn.innerText = optText;
-        btn.onclick = () => handleTriviaAnswer(index, qBank.answer, btn);
+        btn.onclick = () => handleTriviaAnswer(index, qBank.answer, btn, isLightEvent);
         optionsContainer.appendChild(btn);
     });
 
     triviaModal.classList.remove('hidden');
     
-    triviaTimeLeft = 20; // 20 segundos
+    triviaTimeLeft = 20;
     triviaInterval = setInterval(() => {
         triviaTimeLeft -= 0.1;
         const pct = (triviaTimeLeft / 20) * 100;
@@ -523,12 +553,12 @@ function initTrivia() {
         
         if(triviaTimeLeft <= 0) {
             clearInterval(triviaInterval);
-            handleTriviaAnswer(-1, qBank.answer, null);
+            handleTriviaAnswer(-1, qBank.answer, null, isLightEvent);
         }
     }, 100);
 }
 
-function handleTriviaAnswer(selectedIndex, correctIndex, btnElement) {
+function handleTriviaAnswer(selectedIndex, correctIndex, btnElement, isLightEvent) {
     clearInterval(triviaInterval);
     
     const btns = document.querySelectorAll('.option-btn');
@@ -544,21 +574,28 @@ function handleTriviaAnswer(selectedIndex, correctIndex, btnElement) {
     if (acertou) {
         healDamage(30);
         score += 300;
-        coins += 50; // Bônus em moedas por acertar
-        localStorage.setItem('f1_coins', coins);
-        createExplosion(player.x, player.y - 50, '#00ff41'); 
+        coins += 100; 
+        if(isLightEvent) trafficLightState = 'green';
     } else {
         takeDamage(30);
-        for(let i=0; i<30; i++) particleSystem.push(new Particle(player.x, player.y, '#111'));
+        if(isLightEvent) trafficLightState = 'red';
     }
     
     updateHUD();
+    localStorage.setItem('f1_coins', coins);
     
     setTimeout(() => {
         triviaModal.classList.add('hidden');
         if(safetyRating > 0) {
             gameState = 'playing';
-            entities = []; // Limpa tela logo após pit stop
+            entities = [];
+            if(isLightEvent) {
+                // Se errou o semáforo, espera um pouco mais no vermelho
+                setTimeout(() => {
+                    trafficLightState = 'none';
+                    speed = baseSpeed;
+                }, acertou ? 500 : 3000);
+            }
         }
     }, 2000);
 }
